@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import ScanScreen from './components/ScanScreen'
 import HistoryScreen from './components/HistoryScreen'
 import FloatingHelp from './components/FloatingHelp'
 import type { HelpFunction, HelpHowTo } from './components/FloatingHelp'
+import { loadEgyptDrugs } from './lib/egyptDrugs'
 
 type Tab = 'scan' | 'history'
 
@@ -16,6 +17,12 @@ const HELP_HOWTOS: HelpHowTo[] = [
 
 export default function App() {
   const [tab, setTab] = useState<Tab>('scan')
+
+  useEffect(() => {
+    loadEgyptDrugs().catch(() => {
+      // Registry stays unavailable; drug info falls back to the built-in dictionary
+    })
+  }, [])
 
   const functions: HelpFunction[] = [
     { label: 'Scan a prescription', description: 'Start the camera or upload a photo and run OCR', action: () => { setTab('scan'); window.dispatchEvent(new Event('help:start-camera')) } },

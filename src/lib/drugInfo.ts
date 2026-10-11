@@ -1,7 +1,9 @@
 import type { DrugInfo } from './types'
+import { lookupEgyptianDrug, egyptDrugsCount } from './egyptDrugs'
 
 // Real reference data for the common medicines the recognizer knows,
-// plus a generic fallback for anything else. Educational use only.
+// enriched with the Egyptian drug registry (6,500+ products) when available.
+// Educational use only.
 const DRUG_DATABASE: Record<string, Omit<DrugInfo, 'name'>> = {
   paracetamol: {
     genericName: 'Paracetamol (Acetaminophen)',
@@ -209,12 +211,37 @@ export function getDrugInfo(drugName: string): DrugInfo {
   const key = drugName.toLowerCase().trim()
   const known = DRUG_DATABASE[key]
   if (known) {
-    return { name: drugName, ...known }
+    const registry = lookupEgyptianDrug(drugName)
+    return {
+      name: drugName,
+      ...known,
+      genericName: registry ? `${known.genericName} — registered in Egypt as: ${registry.product}${registry.maker && registry.maker !== 'Various' ? ` (${registry.maker})` : ''}` : known.genericName,
+    }
   }
+
+  const registry = lookupEgyptianDrug(drugName)
+  if (registry) {
+    return {
+      name: drugName,
+      genericName: registry.product || registry.name,
+      description: `Identified in the Egyptian drug registry (${egyptDrugsCount()} products): ${registry.product || registry.name}. Clinical details below are general guidance only.`,
+      usage: 'As prescribed by your physician.',
+      dosageInfo: registry.strength && registry.strength !== 'Various' ? `Registry strength: ${registry.strength}. Take exactly as prescribed by your physician.` : 'As prescribed by your physician. Do not exceed the recommended dose.',
+      sideEffects: ['Consult the package leaflet or your pharmacist'],
+      precautions: [
+        'Follow the prescription exactly',
+        ...(registry.form && registry.form !== 'Various' ? [`Dosage form: ${registry.form}`] : []),
+        'Ask your pharmacist about food and drink interactions',
+      ],
+      contraindications: ['Known allergy to this medicine or similar ones'],
+      interactions: ['Tell your doctor or pharmacist about all medicines you take'],
+    }
+  }
+
   return {
     name: drugName,
     genericName: drugName,
-    description: `${drugName} is not in the built-in reference. The details below are general guidance only.`,
+    description: `${drugName} is not in the built-in reference or the Egyptian drug registry. The details below are general guidance only.`,
     usage: 'As prescribed by your physician.',
     dosageInfo: 'As prescribed by your physician. Do not exceed the recommended dose.',
     sideEffects: ['Consult the package leaflet or your pharmacist'],
