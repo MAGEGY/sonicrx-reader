@@ -18,7 +18,8 @@ export default function App() {
   const [tab, setTab] = useState<Tab>('scan')
 
   const functions: HelpFunction[] = [
-    { label: 'Scan a prescription', description: 'Start the camera or upload a photo and run OCR', action: () => setTab('scan') },
+    { label: 'Scan a prescription', description: 'Start the camera or upload a photo and run OCR', action: () => { setTab('scan'); window.dispatchEvent(new Event('help:start-camera')) } },
+    { label: 'Upload an image', description: 'Use a photo from your device instead of the camera', action: () => { setTab('scan'); window.dispatchEvent(new Event('help:upload')) } },
     { label: 'History & reports', description: 'Open past scans and their printable reports', action: () => setTab('history') },
   ]
 

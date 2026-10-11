@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { ChangeEvent } from 'react'
 import { recognizeMedicines } from '../lib/recognizer'
 import { checkInteractions, getDrugInfo } from '../lib/drugInfo'
@@ -10,6 +10,7 @@ type Status = 'idle' | 'camera' | 'ocr' | 'done' | 'error'
 export default function ScanScreen() {
   const videoRef = useRef<HTMLVideoElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const [status, setStatus] = useState<Status>('idle')
   const [lang, setLang] = useState('eng')
   const [rawText, setRawText] = useState('')
@@ -17,6 +18,20 @@ export default function ScanScreen() {
   const [selected, setSelected] = useState<DrugInfo | null>(null)
   const [interactions, setInteractions] = useState<string[]>([])
   const [error, setError] = useState('')
+
+  // Floating help (in App) triggers these via window events
+  useEffect(() => {
+    const onStartCamera = () => { startCamera() }
+    const onUpload = () => fileInputRef.current?.click()
+    window.addEventListener('help:start-camera', onStartCamera)
+    window.addEventListener('help:upload', onUpload)
+    return () => {
+      window.removeEventListener('help:start-camera', onStartCamera)
+      window.removeEventListener('help:upload', onUpload)
+      stopCamera()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   async function startCamera() {
     try {
@@ -125,7 +140,7 @@ export default function ScanScreen() {
           <button className="primary" onClick={startCamera}>📷 Start camera</button>
           <label className="primary upload">
             🖼 Upload image
-            <input type="file" accept="image/*" onChange={onUpload} hidden />
+            <input ref={fileInputRef} type="file" accept="image/*" onChange={onUpload} hidden />
           </label>
           <select value={lang} onChange={(e) => setLang(e.target.value)}>
             <option value="eng">English</option>
